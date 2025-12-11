@@ -19,7 +19,7 @@ conn = psycopg2.connect(
     port=5432,
     user=os.getenv("POSTGRES_USER", "postgres"),
     password=os.getenv("POSTGRES_PASSWORD"),
-    database=os.getenv("POSTGRES_DB", "ynov_ci")
+    database=os.getenv("POSTGRES_DB")
 )
 
 @app.get('/')
