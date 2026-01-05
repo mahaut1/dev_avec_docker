@@ -1,43 +1,39 @@
-version: "3.8"
+volumes:
+  postgres_data:
 
 services:
   frontend:
     image: nginx:alpine
     container_name: frontend-nginx
-    restart: always
+    restart: unless-stopped
     ports:
       - "8080:80"
     volumes:
       - ./frontend:/usr/share/nginx/html:ro
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-      
-  adminer:
-    image: adminer
-    restart: always
-    ports:
-      - "4040:4040"
-    depends_on:
-      - db
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+
   db:
-    image: postgres
-    restart: always
+    image: postgres:16-alpine
+    restart: unless-stopped
     environment:
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-toto}
+      POSTGRES_DB: ${POSTGRES_DB:-ynovdocker}
     volumes:
-      - ./sqlfiles:/docker-entrypoint-initdb.d
-  api:
-    image: python-api
-    build:
-      context: .
-      dockerfile: python.Dockerfile
-    volumes:
-      - ./postgres-test.py:/server/postgres-test.py 
-    restart: always
+      - postgres_data:/var/lib/postgresql/data
+      - ./sqlfiles:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  adminer:
+    image: adminer:latest
+    restart: unless-stopped
     ports:
-      - "8000:8000"
-    environment:
-      POSTGRES_HOST: db
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      - "4040:8080"
     depends_on:
-      - db
-    command: uvicorn postgres-test:app --proxy-headers --host 0.0.0.0 --port 8000
+      db:
+        condition: service_healthy
