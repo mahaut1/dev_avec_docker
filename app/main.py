@@ -56,7 +56,8 @@ def connect_with_retry():
             redis_client.ping()
             break
         except Exception:
-            time.sleep(1)
+             print(f"[WARN] Redis indisponible : {e}")
+        views = 0
 
 
 @app.on_event("startup")
@@ -67,13 +68,23 @@ def startup():
 @app.get("/")
 def get_students():
     """
-    Étape 3 :
-    - SELECT Postgres
-    - compteur Redis atomique
-    - réponse attendue par le frontend
+    Étape 4 :
+    - Postgres = critique
+    - Redis = optionnel (graceful degradation)
     """
-    views = redis_client.incr("dashboard:views")
 
+    # Valeur par défaut si Redis est KO
+    views = 0
+
+    # Tentative Redis
+    try:
+        if redis_client is not None:
+            views = redis_client.incr("dashboard:views")
+    except Exception as e:
+        # Log simple (suffisant pour TP)
+        print(f"[WARN] Redis indisponible : {e}")
+
+    # Postgres doit toujours répondre
     with db_conn.cursor() as cursor:
         cursor.execute("SELECT nom, promo FROM students ORDER BY id;")
         students = cursor.fetchall()
