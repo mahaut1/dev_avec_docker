@@ -1,0 +1,47 @@
+# TP — Orchestration, Résilience et Industrialisation Docker (M2)
+
+Ce projet consiste à transformer un Proof of Concept (POC) en une stack Docker résiliente, sécurisée et industrialisée, capable de supporter un Dashboard Étudiant.
+
+L’architecture finale respecte un modèle 3-tiers :
+- Frontend : Nginx servant une SPA statique
+- Backend : API Python FastAPI
+- Data Layer : Postgres (données persistées) et Redis (cache compteur de vues)
+
+Architecture & Stack Technique :
+- Docker & Docker Compose (v2)
+- Nginx (Frontend)
+- FastAPI + Uvicorn (Backend)
+- PostgreSQL (Base de données persistante)
+- Redis (Cache, compteur de vues)
+- Adminer (outil d’administration – optionnel, profil debug)
+
+Prérequis :
+- Docker Desktop (Windows / macOS) ou Docker Engine + Docker Compose v2 (Linux)
+- Git
+
+Installation :
+git clone https://github.com/mahaut1/dev_avec_docker
+cd dev_avec_docker
+
+Lancement du projet (1 seule commande) :
+docker compose up -d --build
+
+Accès aux services :
+- Dashboard Étudiant : http://localhost:8080/
+- API FastAPI : http://localhost:8000/
+
+Seuls le frontend (8080) et l’API (8000) sont exposés sur l’hôte.
+Postgres et Redis ne sont accessibles que via le réseau interne Docker.
+
+Initialisation et persistance des données (Postgres) :
+Au premier démarrage, PostgreSQL exécute automatiquement tous les scripts présents dans ./sqlfiles/ via le mécanisme natif /docker-entrypoint-initdb.d.
+Les données sont persistées grâce au volume Docker postgres_data.
+
+Résilience & Graceful Degradation (Redis) :
+Redis est utilisé pour maintenir un compteur de vues global du dashboard.
+
+Comportement attendu :
+- Redis disponible : incrémentation atomique du compteur
+- Redis indisponible : l’API continue de répondre avec views = 0
+
+L’API applique une stratégie de graceful degradation : Redis est un service non critique.

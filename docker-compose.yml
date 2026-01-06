@@ -48,6 +48,7 @@ services:
     restart: unless-stopped
     ports:
       - "4040:8080"
+    profiles: ["debug"]
     depends_on:
       db:
         condition: service_healthy
@@ -72,3 +73,5 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    security_opt:
+    - no-new-privileges:true
