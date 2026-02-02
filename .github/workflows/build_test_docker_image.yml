@@ -41,8 +41,12 @@ jobs:
       - name: Docker ps
         run: docker ps
 
+      - name: Wait for api startup
+        run: sleep 5
+
       - name: Docker logs | grep (api)
-        run: docker compose logs api | grep -i "uvicorn"
+        run: docker compose logs api --no-color | grep -iE "uvicorn|running on|startup complete"
+
 
       - name: Docker push to GHCR
         run: docker push ghcr.io/${{ github.repository_owner }}/api-test:latest
