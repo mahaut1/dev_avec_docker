@@ -1,0 +1,48 @@
+name: Test 2 publish Docker Images
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Create .env for docker compose
+        run: |
+          echo "POSTGRES_USER=postgres" >> .env
+          echo "POSTGRES_PASSWORD=postgres" >> .env
+          echo "POSTGRES_DB=app" >> .env
+
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Docker build (python.Dockerfile)
+        run: docker build -t ghcr.io/${{ github.repository_owner }}/api-test:latest -f python.Dockerfile .
+
+      - name: Run db
+        run: docker compose up -d db
+
+      - name: Run redis
+        run: docker compose up -d redis
+
+      - name: Run api
+        run: docker compose up -d api
+
+      - name: Docker ps
+        run: docker ps
+
+      - name: Docker logs | grep (api)
+        run: docker compose logs api | grep -i "uvicorn"
+
+      - name: Docker push to GHCR
+        run: docker push ghcr.io/${{ github.repository_owner }}/api-test:latest
