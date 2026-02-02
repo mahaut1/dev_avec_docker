@@ -1,0 +1,40 @@
+name: Publish image to GHCR
+
+on:
+  workflow_dispatch:
+
+  workflow_run:
+    workflows:
+      - Test 2 publish Docker Images
+    types:
+      - completed
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    # Push seulement si:
+    # - déclenché manuellement
+    # - OU workflow précédent terminé avec succès
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build Docker image (python.Dockerfile)
+        run: |
+          docker build -f python.Dockerfile \
+            -t ghcr.io/${{ github.repository_owner }}/api-test:latest \
+            -t ghcr.io/${{ github.repository_owner }}/api-test:${{ github.sha }} \
+            .
+
+      - name: Push Docker image to GHCR
+        run: |
+          docker push ghcr.io/${{ github.repository_owner }}/api-test:latest
+          docker push ghcr.io/${{ github.repository_owner }}/api-test:${{ github.sha }}
